@@ -265,6 +265,11 @@ class CombatSession:
                 pass
         self.messages_a_supprimer.clear()
 
+        # Tous les participants récupèrent tous leurs PV après le combat,
+        # qu'ils aient gagné, perdu, ou soient morts en cours de route.
+        for uid in self.participants:
+            stats_db.full_heal(uid)
+
     async def annuler_sans_combat(self):
         """Le monstre s'en va car personne n'est venu le chasser à temps."""
         self.termine = True

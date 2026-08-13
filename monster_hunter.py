@@ -5,6 +5,7 @@ import os
 
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 
 import stats_db
 import economie_db
@@ -12,6 +13,9 @@ import inventory_db
 import equipement_db
 import combat_manager
 from combat_manager import CombatSession
+
+load_dotenv()
+ADMIN_ID = os.getenv("ADMIN_ID", "").strip()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -35,7 +39,7 @@ class GuildHuntState:
         self.channel_attente = None
         self.event_chasse_lancee = asyncio.Event()
         self.spawn_task = None
-        self.vocal_name = None  # None = tous les salons vocaux, sinon nom précis à surveiller
+        self.vocal_channel_id = None  # None = tous les salons vocaux, sinon ID précis à surveiller
 
 
 class MonsterHunter(commands.Cog):
@@ -52,28 +56,71 @@ class MonsterHunter(commands.Cog):
     # Boucle de spawn (une par serveur, lancée dans un salon fixe)
     # ------------------------------------------------------------------ #
 
-    def demarrer_boucle_spawn(self, guild, channel, vocal_name=None):
+    def demarrer_boucle_spawn(self, guild, channel, vocal_channel_id=None):
         """
         À appeler une fois au démarrage du bot (ou via une commande !init_chasse).
-        vocal_name: si précisé, seul ce salon vocal est surveillé pour déclencher
-        le spawn ; sinon tous les salons vocaux du serveur sont pris en compte.
+        vocal_channel_id: si précisé, seul ce salon vocal (par ID) est surveillé pour
+        déclencher le spawn ; sinon tous les salons vocaux du serveur sont pris en compte.
         """
         etat = self._etat(guild.id)
         if etat.spawn_task and not etat.spawn_task.done():
             return
         etat.channel_attente = channel
-        etat.vocal_name = vocal_name
+        etat.vocal_channel_id = vocal_channel_id
         etat.spawn_task = asyncio.create_task(self._boucle_spawn(guild, channel))
 
     def _quelquun_en_vocal(self, guild):
         etat = self._etat(guild.id)
-        salons = guild.voice_channels
-        if etat.vocal_name:
-            salons = [vc for vc in salons if vc.name == etat.vocal_name]
+        if etat.vocal_channel_id:
+            vc = guild.get_channel(etat.vocal_channel_id)
+            salons = [vc] if vc else []
+        else:
+            salons = guild.voice_channels
         for vc in salons:
             if any(not m.bot for m in vc.members):
                 return True
         return False
+
+    async def spawner_monstre(self, guild, channel, monstre_data=None):
+        """
+        Fonction réutilisable : fait apparaître un monstre dans `channel` et attend
+        soit qu'il soit chassé (puis que le combat se termine), soit qu'il s'en aille
+        faute de chasseurs après TIMEOUT_CHASSE. Utilisée par la boucle de spawn
+        automatique ET par la commande admin `!spawn_admin`.
+
+        Retourne False si un monstre ou un combat est déjà en cours sur ce serveur
+        (pas de spawn effectué), True sinon.
+        """
+        etat = self._etat(guild.id)
+
+        if etat.monstre_en_attente is not None or (etat.session and not etat.session.termine):
+            return False
+
+        data = monstre_data or combat_manager.monstre_aleatoire()
+        etat.monstre_en_attente = data
+        etat.event_chasse_lancee.clear()
+        await channel.send(
+            f"🐾 Un **{data['nom']}** est apparu ! Utilisez `!chasse` pour l'affronter "
+            f"(il partira dans {combat_manager.TIMEOUT_CHASSE // 60} minutes si personne ne vient)."
+        )
+
+        try:
+            await asyncio.wait_for(
+                etat.event_chasse_lancee.wait(), timeout=combat_manager.TIMEOUT_CHASSE
+            )
+        except asyncio.TimeoutError:
+            # personne n'est venu chasser le monstre à temps
+            etat.monstre_en_attente = None
+            await channel.send(f"{data['nom']} s'en va, personne n'est venu le chasser à temps.")
+            return True
+
+        # --- Un combat a démarré, on attend sa résolution ---
+        session = etat.session
+        while session and not session.termine:
+            await asyncio.sleep(2)
+
+        etat.monstre_en_attente = None
+        return True
 
     async def _boucle_spawn(self, guild, channel):
         etat = self._etat(guild.id)
@@ -87,32 +134,7 @@ class MonsterHunter(commands.Cog):
             if not self._quelquun_en_vocal(guild):
                 continue  # personne n'est resté en vocal, on retente au prochain cycle
 
-            # --- Spawn du monstre ---
-            data = combat_manager.monstre_aleatoire()
-            etat.monstre_en_attente = data
-            etat.event_chasse_lancee.clear()
-            await channel.send(
-                f"🐾 Un **{data['nom']}** est apparu ! Utilisez `!chasse` pour l'affronter "
-                f"(il partira dans {combat_manager.TIMEOUT_CHASSE // 60} minutes si personne ne vient)."
-            )
-
-            try:
-                await asyncio.wait_for(
-                    etat.event_chasse_lancee.wait(), timeout=combat_manager.TIMEOUT_CHASSE
-                )
-            except asyncio.TimeoutError:
-                # personne n'est venu chasser le monstre à temps
-                etat.monstre_en_attente = None
-                await channel.send(f"{data['nom']} s'en va, personne n'est venu le chasser à temps.")
-                await asyncio.sleep(combat_manager.DELAI_APRES_COMBAT)
-                continue
-
-            # --- Un combat a démarré, on attend sa résolution ---
-            session = etat.session
-            while session and not session.termine:
-                await asyncio.sleep(2)
-
-            etat.monstre_en_attente = None
+            await self.spawner_monstre(guild, channel)
             await asyncio.sleep(combat_manager.DELAI_APRES_COMBAT)
             # on ne remet pas etat.session à None ici : !loot doit encore pouvoir
             # être utilisé jusqu'à la prochaine chasse, il sera écrasé au prochain !chasse
@@ -361,6 +383,56 @@ class MonsterHunter(commands.Cog):
         inventory_db.add_item(user_id, resultat_id, quantity=1)
         nom = CATALOGUE_ARMES.get(resultat_id) or CATALOGUE_ARMURES.get(resultat_id)
         await ctx.send(f"<@{user_id}> a fabriqué **{nom['nom']}** !")
+
+    # ------------------------------------------------------------------ #
+    # Commande admin
+    # ------------------------------------------------------------------ #
+
+    def _est_admin(self, user_id):
+        return bool(ADMIN_ID) and str(user_id) == ADMIN_ID
+
+    @commands.command(name="spawn_admin")
+    async def spawn_admin(self, ctx, monstre_id: str = None):
+        """
+        Force l'apparition d'un monstre sur ce serveur (réservé à l'ADMIN_ID défini
+        dans le .env). Sans argument, un monstre aléatoire apparaît. Avec un id
+        (ex: !spawn_admin golem_de_pierre), c'est ce monstre précis qui apparaît.
+        """
+        await ctx.message.delete()
+
+        if not self._est_admin(ctx.author.id):
+            m = await ctx.send("⛔ Commande réservée à l'administrateur.")
+            await asyncio.sleep(5)
+            await m.delete()
+            return
+
+        monstre_data = None
+        if monstre_id:
+            monstre_data = next(
+                (m for m in combat_manager.MONSTRES_DATA if m["id"] == monstre_id), None
+            )
+            if monstre_data is None:
+                await ctx.send(f"Aucun monstre avec l'id `{monstre_id}`.")
+                return
+
+        etat = self._etat(ctx.guild.id)
+        channel = etat.channel_attente or ctx.channel
+
+        lance = self.spawner_via_admin(ctx.guild, channel, monstre_data)
+        if not lance:
+            await ctx.send("Un monstre ou un combat est déjà en cours sur ce serveur.")
+
+    def spawner_via_admin(self, guild, channel, monstre_data=None):
+        """
+        Petite enveloppe autour de `spawner_monstre` (la fonction réutilisable) :
+        lance le spawn en tâche de fond, sans bloquer la commande qui l'a déclenché.
+        Retourne False immédiatement si un monstre/combat est déjà en cours.
+        """
+        etat = self._etat(guild.id)
+        if etat.monstre_en_attente is not None or (etat.session and not etat.session.termine):
+            return False
+        asyncio.create_task(self.spawner_monstre(guild, channel, monstre_data))
+        return True
 
 
 async def setup(bot):

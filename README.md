@@ -5,7 +5,7 @@
 | Fichier | Rôle |
 |---|---|
 | `bot.py` | Point d'entrée, charge le cog et démarre la boucle de spawn sur chaque serveur (salon `#chasse`) |
-| `monster_hunter.py` | Cog principal : commandes `!chasse`, `!attaque`, `!esquive`, `!soin`, `!info_monstre`, `!loot`, `!inventaire`, `!shop`, `!acheter`, `!creation`, et la boucle de spawn |
+| `monster_hunter.py` | Cog principal : commandes `!chasse`, `!attaque`, `!esquive`, `!soin`, `!info_monstre`, `!loot`, `!inventaire`, `!shop`, `!acheter`, `!creation`, `!spawn_admin`, et la boucle de spawn |
 | `combat_manager.py` | `CombatSession` : état du combat en cours (monstre commun, dégâts de chaque joueur, timers d'attaque toutes les 5s côté joueur et côté monstre, prévenance de 5s, fin de combat, loot) |
 | `combat_utils.py` | Formules de dégâts et table des avantages élémentaires (feu > terre > foudre > eau > feu) |
 | `economie_db.py` | Table `economie` : argent par joueur |
@@ -18,7 +18,7 @@
 ## Points importants / à adapter
 
 - **Un seul combat par serveur à la fois** : `GuildHuntState.session` — si tu veux plusieurs combats en parallèle (un par salon vocal par ex.), il faudra clé sur le salon plutôt que sur la guilde.
-- **Détection "en vocal"** : `_quelquun_en_vocal()` regarde par défaut tous les salons vocaux du serveur, ou un seul si `CHASSE_VOICE_CHANNEL_NAME` est renseigné.
+- **Détection "en vocal"** : `_quelquun_en_vocal()` regarde par défaut tous les salons vocaux du serveur, ou un seul si `CHASSE_VOICE_CHANNEL_ID` est renseigné.
 - **`!soin`** consomme un objet nommé exactement `potion_soin` dans l'inventaire (ajouté via le shop). Le mapping potion → soin est dans `CATALOGUE_POTIONS` du fichier `monster_hunter.py`.
 - **`!creation`** est une implémentation simple à base de recettes fixes (matériau de loot → équipement). À étoffer si tu veux plusieurs ingrédients, de l'argent en plus, etc.
 - **Delete des messages** : chaque message envoyé pendant un combat est stocké dans `session.messages_a_supprimer` et supprimé à la fin du combat (victoire ou défaite). Les commandes des joueurs sont supprimées immédiatement après lecture.
@@ -30,12 +30,23 @@ Copie `.env.example` en `.env` et remplis :
 ```
 DISCORD_TOKEN=...
 DATABASE_URL=postgresql://...
-CHASSE_CHANNEL_NAME=chasse
-CHASSE_VOICE_CHANNEL_NAME=
+ADMIN_ID=...
+CHASSE_CHANNEL_ID=123456789012345678
+CHASSE_VOICE_CHANNEL_ID=
 ```
 
-- `CHASSE_CHANNEL_NAME` : nom du salon texte où les monstres apparaissent et où se déroulent les combats (par défaut `chasse`).
-- `CHASSE_VOICE_CHANNEL_NAME` : nom d'un salon vocal précis à surveiller pour déclencher le spawn. Laisse vide pour surveiller tous les salons vocaux du serveur.
+- `CHASSE_CHANNEL_ID` : ID du salon texte où les monstres apparaissent et où se déroulent les combats (**obligatoire**).
+- `CHASSE_VOICE_CHANNEL_ID` : ID d'un salon vocal précis à surveiller pour déclencher le spawn. Laisse vide pour surveiller tous les salons vocaux du serveur.
+- `ADMIN_ID` : ID Discord de l'administrateur autorisé à utiliser `!spawn_admin`.
+
+Pour récupérer un ID (salon ou utilisateur) : active le **Mode développeur** dans Discord (Paramètres > Avancés), puis clic droit sur le salon/l'utilisateur > **Copier l'identifiant**.
+
+## Commande admin
+
+- `!spawn_admin` : force l'apparition d'un monstre aléatoire immédiatement (ignore le timer de 30 min et la vérification "quelqu'un en vocal"). Réservée à l'utilisateur dont l'ID correspond à `ADMIN_ID`.
+- `!spawn_admin <id_monstre>` : force l'apparition d'un monstre précis (ex : `!spawn_admin golem_de_pierre`).
+
+Techniquement, c'est la fonction réutilisable `MonsterHunter.spawner_monstre(guild, channel, monstre_data=None)` qui gère tout le cycle (annonce, attente de `!chasse`, timeout de 20 min, attente de la fin du combat). Elle est appelée aussi bien par la boucle de spawn automatique que par `!spawn_admin`, donc toute évolution du comportement de spawn (message, timeout...) n'est à faire qu'à un seul endroit.
 
 ## Lancer le bot
 
@@ -43,5 +54,3 @@ CHASSE_VOICE_CHANNEL_NAME=
 pip install -r requirements.txt
 python bot.py
 ```
-
-Crée un salon texte portant le nom défini dans `CHASSE_CHANNEL_NAME` sur ton serveur : c'est là que les monstres apparaîtront et que les combats se dérouleront.
