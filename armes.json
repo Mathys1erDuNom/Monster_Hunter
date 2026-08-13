@@ -1,0 +1,56 @@
+[
+  {
+    "id": "epee_bois",
+    "nom": "Épée en bois",
+    "type": "epee",
+    "element": "neutre",
+    "degat": 5,
+    "prix": 0,
+    "rarete": "commun"
+  },
+  {
+    "id": "epee_fer",
+    "nom": "Épée en fer",
+    "type": "epee",
+    "element": "neutre",
+    "degat": 12,
+    "prix": 150,
+    "rarete": "commun"
+  },
+  {
+    "id": "lame_flamme",
+    "nom": "Lame de flamme",
+    "type": "epee",
+    "element": "feu",
+    "degat": 18,
+    "prix": 400,
+    "rarete": "rare"
+  },
+  {
+    "id": "arc_glace",
+    "nom": "Arc de glace",
+    "type": "arc",
+    "element": "eau",
+    "degat": 15,
+    "prix": 350,
+    "rarete": "rare"
+  },
+  {
+    "id": "lance_foudre",
+    "nom": "Lance foudroyante",
+    "type": "lance",
+    "element": "foudre",
+    "degat": 20,
+    "prix": 500,
+    "rarete": "epique"
+  },
+  {
+    "id": "marteau_terre",
+    "nom": "Marteau tellurique",
+    "type": "marteau",
+    "element": "terre",
+    "degat": 25,
+    "prix": 600,
+    "rarete": "epique"
+  }
+]

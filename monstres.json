@@ -1,0 +1,102 @@
+[
+  {
+    "id": "gobelin_des_bois",
+    "nom": "Gobelin des bois",
+    "hp": 150,
+    "attaque": 8,
+    "defense": 4,
+    "element": "terre",
+    "image": "https://exemple.com/images/gobelin.png",
+    "intervalle_attaque": 5,
+    "attaques": [
+      {
+        "nom": "Griffure",
+        "degat_base": 8,
+        "element": "terre",
+        "bonus": null,
+        "malus": null
+      },
+      {
+        "nom": "Rage",
+        "degat_base": 4,
+        "element": "terre",
+        "bonus": {"stat": "attaque", "valeur": 3},
+        "malus": null
+      }
+    ],
+    "argent_min": 20,
+    "argent_max": 50,
+    "xp_gagne": 40,
+    "loot": [
+      {"item": "griffe_gobelin", "chance": 0.6},
+      {"item": "peau_gobelin", "chance": 0.4}
+    ]
+  },
+  {
+    "id": "salamandre_de_feu",
+    "nom": "Salamandre de feu",
+    "hp": 300,
+    "attaque": 14,
+    "defense": 8,
+    "element": "feu",
+    "image": "https://exemple.com/images/salamandre.png",
+    "intervalle_attaque": 6,
+    "attaques": [
+      {
+        "nom": "Souffle ardent",
+        "degat_base": 16,
+        "element": "feu",
+        "bonus": null,
+        "malus": null
+      },
+      {
+        "nom": "Brûlure",
+        "degat_base": 6,
+        "element": "feu",
+        "bonus": null,
+        "malus": {"stat": "defense", "valeur": -2, "duree": 2}
+      }
+    ],
+    "argent_min": 60,
+    "argent_max": 120,
+    "xp_gagne": 90,
+    "loot": [
+      {"item": "ecaille_ignee", "chance": 0.5},
+      {"item": "crocs_salamandre", "chance": 0.35},
+      {"item": "coeur_de_feu", "chance": 0.1}
+    ]
+  },
+  {
+    "id": "golem_de_pierre",
+    "nom": "Golem de pierre",
+    "hp": 500,
+    "attaque": 20,
+    "defense": 18,
+    "element": "terre",
+    "image": "https://exemple.com/images/golem.png",
+    "intervalle_attaque": 7,
+    "attaques": [
+      {
+        "nom": "Coup de poing rocheux",
+        "degat_base": 22,
+        "element": "terre",
+        "bonus": null,
+        "malus": null
+      },
+      {
+        "nom": "Carapace de roche",
+        "degat_base": 0,
+        "element": "terre",
+        "bonus": {"stat": "defense", "valeur": 8, "duree": 3},
+        "malus": null
+      }
+    ],
+    "argent_min": 100,
+    "argent_max": 200,
+    "xp_gagne": 160,
+    "loot": [
+      {"item": "eclat_de_pierre", "chance": 0.7},
+      {"item": "noyau_tellurique", "chance": 0.2}
+    ]
+  }
+]

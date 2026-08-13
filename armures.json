@@ -1,0 +1,56 @@
+[
+  {
+    "id": "tunique_tissu",
+    "nom": "Tunique en tissu",
+    "type": "legere",
+    "element": "neutre",
+    "defense": 3,
+    "prix": 0,
+    "rarete": "commun"
+  },
+  {
+    "id": "armure_cuir",
+    "nom": "Armure en cuir",
+    "type": "legere",
+    "element": "neutre",
+    "defense": 8,
+    "prix": 150,
+    "rarete": "commun"
+  },
+  {
+    "id": "armure_ecailles",
+    "nom": "Armure à écailles",
+    "type": "lourde",
+    "element": "eau",
+    "defense": 15,
+    "prix": 400,
+    "rarete": "rare"
+  },
+  {
+    "id": "armure_magma",
+    "nom": "Armure de magma",
+    "type": "lourde",
+    "element": "feu",
+    "defense": 18,
+    "prix": 450,
+    "rarete": "rare"
+  },
+  {
+    "id": "armure_orage",
+    "nom": "Armure de l'orage",
+    "type": "legere",
+    "element": "foudre",
+    "defense": 20,
+    "prix": 550,
+    "rarete": "epique"
+  },
+  {
+    "id": "armure_roche",
+    "nom": "Armure de roche",
+    "type": "lourde",
+    "element": "terre",
+    "defense": 28,
+    "prix": 650,
+    "rarete": "epique"
+  }
+]
