@@ -47,6 +47,20 @@ class MonsterHunter(commands.Cog):
         self.bot = bot
         self.etats_guildes: dict[int, GuildHuntState] = {}
 
+    async def _try_delete_message(self, message):
+        """Supprime `message` si le bot a la permission; ignore sinon."""
+        try:
+            guild = getattr(message, "guild", None)
+            if guild:
+                perms = message.channel.permissions_for(guild.me)
+                if not perms.manage_messages:
+                    return
+            await message.delete()
+        except discord.Forbidden:
+            return
+        except Exception as e:
+            print(f"Erreur suppression message: {e}")
+
     def _etat(self, guild_id):
         if guild_id not in self.etats_guildes:
             self.etats_guildes[guild_id] = GuildHuntState()
@@ -146,7 +160,7 @@ class MonsterHunter(commands.Cog):
     @commands.command(name="chasse")
     async def chasse(self, ctx):
         etat = self._etat(ctx.guild.id)
-        await ctx.message.delete()
+        await self._try_delete_message(ctx.message)
 
         if etat.monstre_en_attente is None:
             m = await ctx.send("Aucun monstre n'est disponible pour le moment.")
@@ -169,7 +183,7 @@ class MonsterHunter(commands.Cog):
 
     async def _definir_etat_combat(self, ctx, etat_joueur):
         etat = self._etat(ctx.guild.id)
-        await ctx.message.delete()
+        await self._try_delete_message(ctx.message)
         session = etat.session
         if session is None or session.termine:
             m = await ctx.send("Aucun combat en cours.")
@@ -194,7 +208,7 @@ class MonsterHunter(commands.Cog):
     @commands.command(name="soin")
     async def soin(self, ctx):
         etat = self._etat(ctx.guild.id)
-        await ctx.message.delete()
+        await self._try_delete_message(ctx.message)
         session = etat.session
         if session is None or session.termine:
             return
@@ -217,7 +231,7 @@ class MonsterHunter(commands.Cog):
     @commands.command(name="info_monstre")
     async def info_monstre(self, ctx):
         etat = self._etat(ctx.guild.id)
-        await ctx.message.delete()
+        await self._try_delete_message(ctx.message)
         session = etat.session
         if session is None or session.termine:
             m = await ctx.send("Aucun combat en cours.")
@@ -242,7 +256,7 @@ class MonsterHunter(commands.Cog):
     @commands.command(name="loot")
     async def loot(self, ctx):
         etat = self._etat(ctx.guild.id)
-        await ctx.message.delete()
+        await self._try_delete_message(ctx.message)
         session = etat.session
         if session is None or not session.termine:
             m = await ctx.send("Il n'y a rien à looter pour le moment.")
@@ -398,7 +412,7 @@ class MonsterHunter(commands.Cog):
         dans le .env). Sans argument, un monstre aléatoire apparaît. Avec un id
         (ex: !spawn_admin golem_de_pierre), c'est ce monstre précis qui apparaît.
         """
-        await ctx.message.delete()
+        await self._try_delete_message(ctx.message)
 
         if not self._est_admin(ctx.author.id):
             m = await ctx.send("⛔ Commande réservée à l'administrateur.")
