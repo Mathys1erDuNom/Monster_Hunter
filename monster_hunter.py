@@ -113,10 +113,27 @@ class MonsterHunter(commands.Cog):
         data = monstre_data or combat_manager.monstre_aleatoire()
         etat.monstre_en_attente = data
         etat.event_chasse_lancee.clear()
-        await channel.send(
+        # Si une image locale est fournie et existe, envoie-la en pièce jointe
+        texte_annonce = (
             f"🐾 Un **{data['nom']}** est apparu ! Utilisez `!chasse` pour l'affronter "
             f"(il partira dans {combat_manager.TIMEOUT_CHASSE // 60} minutes si personne ne vient)."
         )
+        image_path = None
+        if data.get("image"):
+            possible = os.path.join(BASE_DIR, data["image"])
+            if os.path.exists(possible):
+                image_path = possible
+
+        if image_path:
+            try:
+                file = discord.File(image_path, filename=os.path.basename(image_path))
+                embed = discord.Embed(description=texte_annonce, color=discord.Color.red())
+                embed.set_image(url=f"attachment://{os.path.basename(image_path)}")
+                await channel.send(embed=embed, file=file)
+            except Exception:
+                await channel.send(texte_annonce)
+        else:
+            await channel.send(texte_annonce)
 
         try:
             await asyncio.wait_for(
