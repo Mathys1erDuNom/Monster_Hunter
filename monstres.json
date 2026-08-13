@@ -6,7 +6,7 @@
     "attaque": 8,
     "defense": 4,
     "element": "terre",
-    "image": "https://exemple.com/images/gobelin.png",
+    "image": "images/monstres/79.png",
     "intervalle_attaque": 5,
     "attaques": [
       {
@@ -39,7 +39,7 @@
     "attaque": 14,
     "defense": 8,
     "element": "feu",
-    "image": "https://exemple.com/images/salamandre.png",
+    "image": "images/monstres/79.png",
     "intervalle_attaque": 6,
     "attaques": [
       {
@@ -73,7 +73,7 @@
     "attaque": 20,
     "defense": 18,
     "element": "terre",
-    "image": "https://exemple.com/images/golem.png",
+    "image": "images/monstres/79.png",
     "intervalle_attaque": 7,
     "attaques": [
       {
