@@ -10,7 +10,11 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 
 # Nom du salon textuel où les annonces de chasse et les combats se déroulent.
-SALON_CHASSE = "chasse"
+SALON_CHASSE = os.getenv("CHASSE_CHANNEL_NAME", "chasse")
+
+# Nom du salon vocal à surveiller pour déclencher le spawn (optionnel).
+# Si vide/non défini, le bot surveille TOUS les salons vocaux du serveur.
+SALON_VOCAL_CHASSE = os.getenv("CHASSE_VOICE_CHANNEL_NAME", "")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -32,7 +36,7 @@ async def on_ready():
         if channel is None:
             print(f"⚠️ Aucun salon '{SALON_CHASSE}' trouvé sur {guild.name}, boucle de chasse non démarrée.")
             continue
-        cog.demarrer_boucle_spawn(guild, channel)
+        cog.demarrer_boucle_spawn(guild, channel, vocal_name=SALON_VOCAL_CHASSE or None)
 
 
 if __name__ == "__main__":

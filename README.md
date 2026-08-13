@@ -18,15 +18,24 @@
 ## Points importants / à adapter
 
 - **Un seul combat par serveur à la fois** : `GuildHuntState.session` — si tu veux plusieurs combats en parallèle (un par salon vocal par ex.), il faudra clé sur le salon plutôt que sur la guilde.
-- **Détection "en vocal"** : `_quelquun_en_vocal()` regarde tous les salons vocaux du serveur. Adapte si tu veux limiter à un salon vocal précis.
+- **Détection "en vocal"** : `_quelquun_en_vocal()` regarde par défaut tous les salons vocaux du serveur, ou un seul si `CHASSE_VOICE_CHANNEL_NAME` est renseigné.
 - **`!soin`** consomme un objet nommé exactement `potion_soin` dans l'inventaire (ajouté via le shop). Le mapping potion → soin est dans `CATALOGUE_POTIONS` du fichier `monster_hunter.py`.
 - **`!creation`** est une implémentation simple à base de recettes fixes (matériau de loot → équipement). À étoffer si tu veux plusieurs ingrédients, de l'argent en plus, etc.
 - **Delete des messages** : chaque message envoyé pendant un combat est stocké dans `session.messages_a_supprimer` et supprimé à la fin du combat (victoire ou défaite). Les commandes des joueurs sont supprimées immédiatement après lecture.
-- **`.env`** attendu à la racine avec :
-  ```
-  DISCORD_TOKEN=...
-  DATABASE_URL=postgresql://...
-  ```
+
+## Configuration (`.env`)
+
+Copie `.env.example` en `.env` et remplis :
+
+```
+DISCORD_TOKEN=...
+DATABASE_URL=postgresql://...
+CHASSE_CHANNEL_NAME=chasse
+CHASSE_VOICE_CHANNEL_NAME=
+```
+
+- `CHASSE_CHANNEL_NAME` : nom du salon texte où les monstres apparaissent et où se déroulent les combats (par défaut `chasse`).
+- `CHASSE_VOICE_CHANNEL_NAME` : nom d'un salon vocal précis à surveiller pour déclencher le spawn. Laisse vide pour surveiller tous les salons vocaux du serveur.
 
 ## Lancer le bot
 
@@ -35,4 +44,4 @@ pip install -r requirements.txt
 python bot.py
 ```
 
-Crée un salon texte nommé `chasse` sur ton serveur : c'est là que les monstres apparaîtront et que les combats se dérouleront.
+Crée un salon texte portant le nom défini dans `CHASSE_CHANNEL_NAME` sur ton serveur : c'est là que les monstres apparaîtront et que les combats se dérouleront.

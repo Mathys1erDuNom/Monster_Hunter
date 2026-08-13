@@ -35,6 +35,7 @@ class GuildHuntState:
         self.channel_attente = None
         self.event_chasse_lancee = asyncio.Event()
         self.spawn_task = None
+        self.vocal_name = None  # None = tous les salons vocaux, sinon nom précis à surveiller
 
 
 class MonsterHunter(commands.Cog):
@@ -51,16 +52,25 @@ class MonsterHunter(commands.Cog):
     # Boucle de spawn (une par serveur, lancée dans un salon fixe)
     # ------------------------------------------------------------------ #
 
-    def demarrer_boucle_spawn(self, guild, channel):
-        """À appeler une fois au démarrage du bot (ou via une commande !init_chasse)."""
+    def demarrer_boucle_spawn(self, guild, channel, vocal_name=None):
+        """
+        À appeler une fois au démarrage du bot (ou via une commande !init_chasse).
+        vocal_name: si précisé, seul ce salon vocal est surveillé pour déclencher
+        le spawn ; sinon tous les salons vocaux du serveur sont pris en compte.
+        """
         etat = self._etat(guild.id)
         if etat.spawn_task and not etat.spawn_task.done():
             return
         etat.channel_attente = channel
+        etat.vocal_name = vocal_name
         etat.spawn_task = asyncio.create_task(self._boucle_spawn(guild, channel))
 
     def _quelquun_en_vocal(self, guild):
-        for vc in guild.voice_channels:
+        etat = self._etat(guild.id)
+        salons = guild.voice_channels
+        if etat.vocal_name:
+            salons = [vc for vc in salons if vc.name == etat.vocal_name]
+        for vc in salons:
             if any(not m.bot for m in vc.members):
                 return True
         return False
